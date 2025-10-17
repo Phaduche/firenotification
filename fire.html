@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>보호 대상자 안전 모니터링</title>
+
+  <!-- Firebase SDK -->
+  <script type="module" src="fire.js"></script>
+
+  <link rel="stylesheet" href="fire.css">
+</head>
+
+<body>
+  <div class="emergency-banner" id="emergencyBanner">
+    🚨 화재 발생! 사용자가 위험에 처했습니다!
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h1>👤 보호 대상자 안전 모니터링</h1>
+      <p>보호자님, 실시간으로 사용자의 환경을 확인하세요</p>
+    </div>
+
+    <div class="status-banner status-normal" id="statusBanner">
+      ✅ 사용자의 환경이 안전합니다
+    </div>
+
+    <div class="sensor-grid">
+      <div class="sensor-card">
+        <div class="sensor-icon">🌡️</div>
+        <div class="sensor-label">실내 온도</div>
+        <div class="sensor-value" id="temperature">--</div>
+      </div>
+
+      <div class="sensor-card">
+        <div class="sensor-icon">💧</div>
+        <div class="sensor-label">실내 습도</div>
+        <div class="sensor-value" id="humidity">--</div>
+      </div>
+
+      <div class="sensor-card">
+        <div class="sensor-icon" id="fireIcon">🛡️</div>
+        <div class="sensor-label">화재 상태</div>
+        <div class="sensor-value" id="fireStatus">안전</div>
+        <div class="sensor-status status-good" id="fireStatusBadge">정상</div>
+      </div>
+    </div>
+
+    <div class="fire-alert-section" id="fireAlertSection">
+      <h2>🔥 화재 발생 경보</h2>
+      <p>⚠️ 사용자의 공간에서 화재가 감지되었습니다. 즉시 확인하세요.</p>
+      <p>발생 시각: <span id="fireAlertTime">--</span></p>
+    </div>
+
+    <div class="last-update">
+      마지막 업데이트: <span id="lastUpdate">데이터 수신 중...</span>
+    </div>
+  </div>
+</body>
+</html>
