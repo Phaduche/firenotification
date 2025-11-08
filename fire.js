@@ -3,13 +3,13 @@ import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10
 
 // ✅ Firebase 설정
 const firebaseConfig = {
-  apiKey: "AIzaSyDtOSe7mkywEwFaKYt3N7Nw6CPjn_-Uw4M",
-  authDomain: "esp32-push-notification-50116.firebaseapp.com",
-  databaseURL: "https://esp32-push-notification-50116-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "esp32-push-notification-50116",
-  storageBucket: "esp32-push-notification-50116.firebasestorage.app",
-  messagingSenderId: "167938923395",
-  appId: "1:167938923395:web:6b6a82503c6accd10a34b6"
+  apiKey: "",
+  authDomain: "",
+  databaseURL: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 
 // ✅ Firebase 초기화
