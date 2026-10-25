@@ -1,6 +1,6 @@
 // 앱 껍데기를 캐시해 두면 홈 화면 앱이 빠르게 열리고, 화재 알림을 잠금 화면에 띄울 수 있다.
-const CACHE = "qubit-guardian-v1";
-const SHELL = ["./", "index.html", "app.css", "app.js", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
+const CACHE = "qubit-guardian-v2";
+const SHELL = ["./", "index.html", "app.css", "app.js", "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

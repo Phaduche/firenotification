@@ -1,16 +1,9 @@
 // Qubit 가디언 — 화상 위험 알림 스마트 AI 안경의 보호자용 앱.
 // ESP32가 Firebase Realtime Database에 올리는 센서값과 화재 상태를 실시간으로 보여 준다.
 
+import { firebaseConfig } from "./firebase-config.js";
+
 const FIREBASE_VERSION = "10.7.1";
-const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-};
 
 // 작품 설명서의 다중 검증 기준. 네 조건이 모두 맞으면 안경이 긴급 경고를 낸다.
 const CONDITIONS = [
@@ -22,10 +15,10 @@ const CONDITIONS = [
 
 const EVENT_TEXT = {
   fire: { title: "화재 감지", icon: "i-flame" },
-  clear: { title: "정상으로 돌아왔어요", icon: "i-shield-check" },
-  ack: { title: "보호자가 경보를 확인했어요", icon: "i-check" },
+  clear: { title: "정상 복구", icon: "i-shield-check" },
+  ack: { title: "경보 확인", icon: "i-check" },
   online: { title: "실시간 연결됨", icon: "i-wifi" },
-  offline: { title: "연결이 끊겼어요", icon: "i-wifi-off" },
+  offline: { title: "연결 끊김", icon: "i-wifi-off" },
   demo: { title: "시연 모드", icon: "i-play" },
 };
 
@@ -290,30 +283,26 @@ function renderStatus() {
   card.classList.toggle("is-acked", mode === "fire" && state.acked);
 
   if (mode === "fire") {
-    $("#statusTitle").textContent = "화재가 감지되었어요";
-    $("#statusMeta").textContent = state.fireAt
-      ? `${timeSecFmt.format(state.fireAt)} 발생 · ${relative(state.fireAt)}`
-      : "지금 바로 확인하세요";
+    $("#statusTitle").textContent = "화재 감지";
+    $("#statusMeta").textContent = state.fireAt ? `${timeSecFmt.format(state.fireAt)} 발생` : "";
   } else if (mode === "safe") {
     $("#statusTitle").textContent = "안전합니다";
-    $("#statusMeta").textContent = state.lastAt
-      ? `${relative(state.lastAt)} 확인`
-      : "마지막 저장값 기준 · 새 신호를 기다리는 중";
+    $("#statusMeta").textContent = state.lastAt ? relative(state.lastAt) : "";
   } else {
-    $("#statusTitle").textContent = state.conn === "offline" ? "연결을 확인하세요" : "확인 중이에요";
+    $("#statusTitle").textContent = state.conn === "offline" ? "연결 끊김" : "확인 중";
     $("#statusMeta").textContent = state.noConfig
-      ? "Firebase 설정이 비어 있어요 · 메뉴에서 시연 모드를 쓸 수 있어요"
+      ? "Firebase 설정 필요"
       : state.conn === "offline"
-        ? "인터넷 연결이 끊겼어요"
-        : "안경의 데이터를 기다리는 중";
+        ? "오프라인"
+        : "수신 대기";
   }
   $("#deviceState").textContent = state.demo
-    ? "시연 모드로 동작 중"
+    ? "시연 모드"
     : state.real.lastAt
-      ? `마지막 신호 ${relative(state.real.lastAt)}`
+      ? relative(state.real.lastAt)
       : hasValues(state.real.values)
-        ? "저장된 값만 있어요 · 안경을 켜면 실시간으로 바뀌어요"
-        : "아직 받은 데이터가 없어요";
+        ? "대기 중"
+        : "데이터 없음";
 }
 
 function renderConn() {
@@ -338,10 +327,10 @@ function renderEvents() {
   const recent = state.events.slice(0, 3);
   $("#recentEvents").innerHTML = recent.length
     ? recent.map((e) => eventRow(e, true)).join("")
-    : `<li class="empty">아직 알림이 없어요</li>`;
+    : `<li class="empty">알림 없음</li>`;
 
   if (!state.events.length) {
-    $("#eventGroups").innerHTML = `<div class="card empty">기록된 알림이 없어요</div>`;
+    $("#eventGroups").innerHTML = `<div class="card empty">알림 없음</div>`;
     return;
   }
   const groups = new Map();
@@ -359,7 +348,7 @@ function renderChart(svg, series, limit, digits, unit, statsEl, nowEl) {
   const vals = series.filter((v) => v != null);
   nowEl.textContent = vals.length ? `${vals[vals.length - 1].toFixed(digits)} ${unit}` : `-- ${unit}`;
   if (vals.length < 2) {
-    svg.innerHTML = `<text x="160" y="64" text-anchor="middle" font-size="13" fill="currentColor" opacity=".5">측정값이 쌓이면 그래프가 나타나요</text>`;
+    svg.innerHTML = `<text x="160" y="64" text-anchor="middle" font-size="13" fill="currentColor" opacity=".5">데이터 없음</text>`;
     statsEl.innerHTML = "";
     return;
   }
@@ -396,7 +385,7 @@ function renderCharts() {
 function renderProfile() {
   const p = state.profile;
   $("#profileName").textContent = p.name ? `${p.name}님` : "이름 없음";
-  $("#profileSub").textContent = [p.place, p.phone].filter(Boolean).join(" · ") || "정보를 입력하세요";
+  $("#profileSub").textContent = [p.place, p.phone].filter(Boolean).join(" · ") || "정보 없음";
   $("#profileInitial").textContent = (p.name || "?").slice(0, 1);
   const digits = (p.phone || "").replace(/[^\d+]/g, "");
   const call = $("#callWard");
@@ -541,7 +530,7 @@ function acknowledge() {
   addEvent("ack", state.demo ? { demo: true } : {});
   renderStatus();
   renderAlertChrome();
-  toast("경보를 확인했어요");
+  toast("확인됨");
 }
 
 function renderNotify() {
@@ -549,28 +538,29 @@ function renderNotify() {
   const sub = $("#notifySub");
   if (!("Notification" in window)) {
     btn.textContent = "안내";
-    sub.textContent = "아이폰은 홈 화면에 추가한 뒤 알림을 켤 수 있어요";
+    sub.textContent = "홈 화면에 추가 후 사용";
+    sub.hidden = false;
     return;
   }
   const p = Notification.permission;
   btn.textContent = p === "granted" ? "켜짐" : p === "denied" ? "차단됨" : "켜기";
   btn.disabled = p === "granted";
-  sub.textContent =
-    p === "denied" ? "설정 앱에서 이 앱의 알림을 허용해 주세요" : "화재가 감지되면 잠금 화면에 알려요";
+  sub.textContent = "설정에서 알림 허용 필요";
+  sub.hidden = p !== "denied";
 }
 
 async function requestNotify() {
   if (!("Notification" in window)) {
-    toast("Safari 공유 버튼 → ‘홈 화면에 추가’ 후 다시 시도해 주세요");
+    toast("공유 → 홈 화면에 추가 후 사용");
     return;
   }
   if (Notification.permission === "denied") {
-    toast("설정 앱에서 알림을 허용해 주세요");
+    toast("설정에서 알림 허용 필요");
     return;
   }
   const result = await Notification.requestPermission();
   renderNotify();
-  if (result === "granted") toast("화재 알림을 받을 수 있어요");
+  if (result === "granted") toast("알림 켜짐");
 }
 
 // ───────── 시연 모드 ─────────
@@ -613,7 +603,7 @@ function setDemo(on) {
     for (let i = 0; i < 20; i++) demoTick();
     setFire(false, "demo");
     demoTimer = setInterval(demoTick, 1500);
-    toast("시연 모드를 켰어요");
+    toast("시연 모드 켜짐");
   } else {
     clearInterval(demoTimer);
     demoTimer = null;
@@ -630,7 +620,7 @@ function setDemo(on) {
     renderConditions();
     renderStatus();
     renderAlertChrome();
-    toast("실제 안경 데이터로 돌아왔어요");
+    toast("시연 모드 꺼짐");
   }
   renderConn();
 }
@@ -652,7 +642,7 @@ function demoFire(on) {
     },
     on ? 2500 : 800,
   );
-  toast(on ? "화재 상황을 재현하는 중…" : "정상 상태로 돌리는 중…");
+  toast(on ? "화재 재현 중…" : "복구 중…");
 }
 
 // ───────── 설정 ─────────
@@ -695,7 +685,7 @@ function initMenu() {
   $("#ackBtn").addEventListener("click", acknowledge);
 
   $("#clearHistory").addEventListener("click", () => {
-    if (!confirm("알림 기록과 센서 기록을 모두 지울까요?")) return;
+    if (!confirm("기록을 모두 지울까요?")) return;
     state.events = [];
     state.readings = [];
     store.set("events", []);
@@ -703,7 +693,7 @@ function initMenu() {
     renderEvents();
     renderCharts();
     renderMetrics();
-    toast("기록을 지웠어요");
+    toast("삭제됨");
   });
 
   // 이미 홈 화면 앱으로 열었으면 설치 안내는 필요 없다.
@@ -731,7 +721,7 @@ function initMenu() {
     store.set("profile", state.profile);
     renderProfile();
     renderEvents();
-    toast("저장했어요");
+    toast("저장됨");
   });
 }
 
