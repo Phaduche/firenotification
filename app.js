@@ -24,7 +24,7 @@ const EVENT_TEXT = {
 
 const MAX_READINGS = 120;
 const MAX_EVENTS = 200;
-const THEME_COLOR = { light: "#ffffff", dark: "#1b1d22", alert: "#e7000b" };
+const THEME_COLOR = { light: "#f2f2f7", dark: "#000000", alert: "#ff3b30" };
 
 // ───────── 저장소 ─────────
 // 사생활 보호 모드 등에서 localStorage가 막혀도 앱은 그대로 돈다.
@@ -74,8 +74,6 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const escapeHtml = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-
-const icon = (id, cls = "i i-sm") => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 
 // ───────── 시간 표시 ─────────
 
@@ -230,6 +228,12 @@ function sparkPath(values, w, h, min, max) {
     .join(" ");
 }
 
+// 에어띵스·어웨어처럼 숫자 아래에 한 단어로 상태를 붙인다.
+const LEVELS = {
+  temp: (v) => (v >= 40 ? ["bad", "위험"] : v >= 30 ? ["warn", "높음"] : v < 10 ? ["warn", "낮음"] : ["ok", "정상"]),
+  hum: (v) => (v <= 40 ? ["bad", "건조"] : v >= 70 ? ["warn", "높음"] : ["ok", "정상"]),
+};
+
 function renderMetrics() {
   const recent = state.demo ? demoHistory : state.readings.slice(-30);
   const pairs = [
@@ -240,12 +244,15 @@ function renderMetrics() {
     const el = document.getElementById(id);
     const v = state.values[key];
     $("[data-value]", el).textContent = fmtValue(v, digits);
-    const cond = CONDITIONS.find((c) => c.key === key);
-    el.classList.toggle("is-hit", v != null && cond.hit(v));
+    const [level, word] = v == null ? ["none", "—"] : LEVELS[key](v);
+    const status = $(".tile__status", el);
+    status.dataset.level = level;
+    $("[data-status]", status).textContent = word;
     const series = recent.map((r) => r[key]).filter((x) => x != null);
     const min = Math.min(...series) - 0.5;
     const max = Math.max(...series) + 0.5;
-    $(".spark__line", el).setAttribute("d", series.length > 1 ? sparkPath(series, 100, 28, min, max) : "");
+    $(".spark__line", el).setAttribute("d", series.length > 1 ? sparkPath(series, 100, 24, min, max) : "");
+    $(".spark", el).style.display = series.length > 1 ? "" : "none";
   }
   $("#lastUpdate").textContent = lastUpdateText();
 }
@@ -254,27 +261,21 @@ function renderConditions() {
   let hits = 0;
   $("#condList").innerHTML = CONDITIONS.map((c) => {
     const v = state.values[c.key];
-    const has = v != null;
-    const hit = has && c.hit(v);
+    const hit = v != null && c.hit(v);
     if (hit) hits++;
-    const badge = !has
-      ? `<span class="badge">미수신</span>`
-      : hit
-        ? `<span class="badge badge-hit">${icon("i-check", "i")}충족</span>`
-        : `<span class="badge">${icon("i-minus", "i")}미충족</span>`;
     return `<li class="row cond${hit ? " is-hit" : ""}">
-      <span class="row__icon">${icon(c.icon)}</span>
-      <div class="row__main"><span class="row__title">${c.label}</span><span class="row__sub">기준 ${c.rule}</span></div>
-      <div class="row__end"><span class="row__value">${has ? fmtValue(v, c.digits) + c.unit : "--"}</span>${badge}</div>
+      <span class="row__main"><span class="row__title">${c.label}</span><span class="row__sub">${c.rule}</span></span>
+      <span class="cond__value">${v == null ? "—" : fmtValue(v, c.digits) + c.unit}<i class="dot"></i></span>
     </li>`;
   }).join("");
-  $("#condCount").textContent = `${hits} / ${CONDITIONS.length} 충족`;
+  $$("#condBar i").forEach((seg, i) => seg.classList.toggle("on", i < hits));
+  $("#condCount").textContent = `위험 조건 ${hits}/${CONDITIONS.length}`;
 }
 
 function renderStatus() {
   const card = $("#statusCard");
   const p = state.profile;
-  $("#statusWho").textContent = [p.name && `${p.name}님`, p.place].filter(Boolean).join(" · ");
+  $("#statusWho").textContent = p.place || "보호 대상자";
 
   let mode = "unknown";
   if (state.fire === true) mode = "fire";
@@ -283,10 +284,10 @@ function renderStatus() {
   card.classList.toggle("is-acked", mode === "fire" && state.acked);
 
   if (mode === "fire") {
-    $("#statusTitle").textContent = "화재 감지";
+    $("#statusTitle").textContent = "화재";
     $("#statusMeta").textContent = state.fireAt ? `${timeSecFmt.format(state.fireAt)} 발생` : "";
   } else if (mode === "safe") {
-    $("#statusTitle").textContent = "안전합니다";
+    $("#statusTitle").textContent = "정상";
     $("#statusMeta").textContent = state.lastAt ? relative(state.lastAt) : "";
   } else {
     $("#statusTitle").textContent = state.conn === "offline" ? "연결 끊김" : "확인 중";
@@ -296,10 +297,12 @@ function renderStatus() {
         ? "오프라인"
         : "수신 대기";
   }
+  const live = state.demo || (state.real.lastAt && Date.now() - state.real.lastAt < 60000);
+  $(".device").classList.toggle("is-live", Boolean(live));
   $("#deviceState").textContent = state.demo
     ? "시연 모드"
     : state.real.lastAt
-      ? relative(state.real.lastAt)
+      ? `${relative(state.real.lastAt)} 수신`
       : hasValues(state.real.values)
         ? "대기 중"
         : "데이터 없음";
@@ -312,14 +315,16 @@ function renderConn() {
   $(".conn__text", pill).textContent = { demo: "시연 모드", online: "실시간", offline: "연결 끊김", connecting: "연결 중" }[s];
 }
 
+// 링·네스트 앱처럼 왼쪽에 시각, 가운데 점, 오른쪽에 내용을 둔 타임라인.
 function eventRow(e, rel) {
-  const meta = EVENT_TEXT[e.kind] || { title: e.kind, icon: "i-bell" };
+  const meta = EVENT_TEXT[e.kind] || { title: e.kind };
   const title = e.kind === "demo" ? (e.on ? "시연 모드 시작" : "시연 모드 종료") : meta.title;
-  const sub = e.kind === "fire" ? escapeHtml([state.profile.name && `${state.profile.name}님`, state.profile.place].filter(Boolean).join(" · ")) : "";
-  return `<li class="row event" data-kind="${e.kind}">
-    <span class="row__icon">${icon(meta.icon)}</span>
-    <div class="row__main"><span class="row__title">${title}${e.demo ? " (시연)" : ""}</span>${sub ? `<span class="row__sub">${sub}</span>` : ""}</div>
-    <span class="row__end">${rel ? relative(e.t) : timeFmt.format(e.t)}</span>
+  const sub = e.kind === "fire" ? escapeHtml(state.profile.place || "") : "";
+  const when = rel && Date.now() - e.t < 3600000 ? relative(e.t) : timeFmt.format(e.t);
+  return `<li class="row" data-kind="${e.kind}">
+    <span class="tl__time">${when}</span>
+    <span class="tl__mark" aria-hidden="true"></span>
+    <span class="tl__body">${title}${e.demo ? " · 시연" : ""}${sub ? `<small>${sub}</small>` : ""}</span>
   </li>`;
 }
 
@@ -327,10 +332,10 @@ function renderEvents() {
   const recent = state.events.slice(0, 3);
   $("#recentEvents").innerHTML = recent.length
     ? recent.map((e) => eventRow(e, true)).join("")
-    : `<li class="empty">알림 없음</li>`;
+    : `<li class="empty">활동 없음</li>`;
 
   if (!state.events.length) {
-    $("#eventGroups").innerHTML = `<div class="card empty">알림 없음</div>`;
+    $("#eventGroups").innerHTML = `<ul class="list"><li class="empty">활동 없음</li></ul>`;
     return;
   }
   const groups = new Map();
@@ -340,7 +345,7 @@ function renderEvents() {
     groups.get(label).push(e);
   }
   $("#eventGroups").innerHTML = [...groups]
-    .map(([label, list]) => `<section><h3 class="group-label">${label}</h3><ul class="card list">${list.map((e) => eventRow(e, false)).join("")}</ul></section>`)
+    .map(([label, list]) => `<section><h3 class="group-label">${label}</h3><ul class="list timeline">${list.map((e) => eventRow(e, false)).join("")}</ul></section>`)
     .join("");
 }
 
@@ -387,6 +392,8 @@ function renderProfile() {
   $("#profileName").textContent = p.name ? `${p.name}님` : "이름 없음";
   $("#profileSub").textContent = [p.place, p.phone].filter(Boolean).join(" · ") || "정보 없음";
   $("#profileInitial").textContent = (p.name || "?").slice(0, 1);
+  $("#homeTitle").textContent = p.name ? `${p.name}님` : "홈";
+  $("[data-nav-title]", $("#panel-home")).textContent = p.name ? `${p.name}님` : "홈";
   const digits = (p.phone || "").replace(/[^\d+]/g, "");
   const call = $("#callWard");
   call.hidden = !digits;
@@ -432,7 +439,7 @@ function initTabs() {
     });
   }
   for (const panel of $$(".panel")) {
-    panel.addEventListener("scroll", () => panel.classList.toggle("is-scrolled", panel.scrollTop > 4), { passive: true });
+    panel.addEventListener("scroll", () => panel.classList.toggle("is-scrolled", panel.scrollTop > 34), { passive: true });
   }
   $("#alertBar").addEventListener("click", () => {
     if (state.tab !== "home") location.hash = "home";
@@ -813,6 +820,8 @@ document.addEventListener("visibilitychange", () => {
 
 // iOS 17.4+ Safari의 네이티브 스위치(햅틱 포함)를 쓰고, 없으면 CSS로 같은 모양을 그린다.
 if (!("switch" in document.createElement("input"))) document.documentElement.classList.add("no-native-switch");
+
+$("#todayLabel").textContent = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date());
 
 applyTheme();
 initTabs();
