@@ -11,7 +11,7 @@
       name="description"
       content="화상 위험 알림 스마트 AI 안경의 보호자용 실시간 모니터링 앱"
     />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f2f2f7" />
     <meta name="color-scheme" content="light dark" />
     <meta name="format-detection" content="telephone=no" />
 
@@ -45,7 +45,6 @@
 
   <body>
     <div class="shell" id="shell">
-      <!-- 화재가 나면 어느 탭에 있든 맨 위에 뜬다. 누르면 홈으로 간다. -->
       <button type="button" class="alert-bar" id="alertBar" hidden>
         <span class="alert-bar__dot" aria-hidden="true"></span>
         <span class="alert-bar__text">화재 감지</span>
@@ -55,98 +54,82 @@
       <main class="panels">
         <!-- 홈 -->
         <section class="panel" id="panel-home" data-tab="home" aria-label="홈">
-          <header class="page-header">
-            <h1 class="page-title">안전 모니터링</h1>
-            <span class="conn" id="connPill" data-state="connecting">
-              <span class="conn__dot" aria-hidden="true"></span>
-              <span class="conn__text">연결 중</span>
-            </span>
-          </header>
-
+          <header class="nav"><span class="nav__title" data-nav-title>홈</span></header>
           <div class="page">
-            <article class="status" id="statusCard" data-state="safe">
-              <div class="status__top">
-                <div class="status__icon" aria-hidden="true">
-                  <svg class="i i-lg status__icon-safe"><use href="#i-shield-check" /></svg>
-                  <svg class="i i-lg status__icon-fire"><use href="#i-flame" /></svg>
-                </div>
-                <div class="status__body">
-                  <p class="status__eyebrow" id="statusWho">홍길동님 · 거실</p>
-                  <h2 class="status__title" id="statusTitle">안전합니다</h2>
-                  <p class="status__meta" id="statusMeta">데이터를 기다리는 중</p>
-                </div>
+            <div class="large-head">
+              <div class="large-head__row">
+                <span class="eyebrow" id="todayLabel"></span>
+                <span class="conn" id="connPill" data-state="connecting">
+                  <span class="conn__dot" aria-hidden="true"></span><span class="conn__text">연결 중</span>
+                </span>
               </div>
+              <h1 class="large-title" id="homeTitle">홍길동님</h1>
+            </div>
 
-              <div class="status__actions">
-                <a class="btn btn-white" href="tel:119">
-                  <svg class="i" aria-hidden="true"><use href="#i-siren" /></svg>
-                  119 신고
+            <article class="hero" id="statusCard" data-state="unknown">
+              <div class="ring" aria-hidden="false">
+                <span class="ring__title" id="statusTitle">확인 중</span>
+                <span class="ring__meta" id="statusMeta"></span>
+              </div>
+              <div class="hero__foot">
+                <span class="hero__who" id="statusWho">거실</span>
+                <div class="condbar" id="condBar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                <span class="hero__count" id="condCount">위험 조건 0/4</span>
+              </div>
+              <div class="hero__actions">
+                <a class="btn btn-onred" href="tel:119">
+                  <svg class="i" aria-hidden="true"><use href="#i-siren" /></svg>119
                 </a>
-                <a class="btn btn-white-ghost" id="callWard" href="tel:01012345678">
-                  <svg class="i" aria-hidden="true"><use href="#i-phone" /></svg>
-                  전화하기
+                <a class="btn btn-onred-ghost" id="callWard" href="tel:01012345678">
+                  <svg class="i" aria-hidden="true"><use href="#i-phone" /></svg>전화
                 </a>
-                <button type="button" class="btn btn-white-ghost btn-block" id="ackBtn">
-                  경보 확인
-                </button>
+                <button type="button" class="btn btn-onred-ghost btn-wide" id="ackBtn">경보 확인</button>
               </div>
             </article>
 
-            <section class="section">
-              <div class="section__head">
-                <h2 class="section__title">실시간 환경</h2>
-                <span class="section__aside" id="lastUpdate">수신 대기</span>
+            <section class="group">
+              <div class="group__head">
+                <h2>실내 환경</h2>
+                <span class="group__aside" id="lastUpdate">수신 대기</span>
               </div>
-              <div class="metrics">
-                <article class="metric" id="metricTemp">
-                  <div class="metric__label">
-                    <svg class="i i-sm" aria-hidden="true"><use href="#i-thermometer" /></svg>
-                    온도
-                  </div>
-                  <p class="metric__value"><span data-value>--</span><small>°C</small></p>
-                  <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
-                    <path class="spark__line" d="" />
-                  </svg>
+              <div class="tiles">
+                <article class="tile" id="metricTemp">
+                  <span class="tile__label">온도</span>
+                  <span class="tile__value"><span data-value>--</span><small>°C</small></span>
+                  <span class="tile__status" data-level="none"><i class="dot"></i><span data-status>—</span></span>
+                  <svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><path class="spark__line" d="" /></svg>
                 </article>
-                <article class="metric" id="metricHum">
-                  <div class="metric__label">
-                    <svg class="i i-sm" aria-hidden="true"><use href="#i-droplets" /></svg>
-                    습도
-                  </div>
-                  <p class="metric__value"><span data-value>--</span><small>%</small></p>
-                  <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
-                    <path class="spark__line" d="" />
-                  </svg>
+                <article class="tile" id="metricHum">
+                  <span class="tile__label">습도</span>
+                  <span class="tile__value"><span data-value>--</span><small>%</small></span>
+                  <span class="tile__status" data-level="none"><i class="dot"></i><span data-status>—</span></span>
+                  <svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><path class="spark__line" d="" /></svg>
                 </article>
               </div>
             </section>
 
-            <section class="section">
-              <div class="section__head">
-                <h2 class="section__title">위험 판단 조건</h2>
-                <span class="section__aside" id="condCount">0 / 4</span>
-              </div>
-              <ul class="card list" id="condList"></ul>
+            <section class="group">
+              <div class="group__head"><h2>위험 판단 기준</h2></div>
+              <ul class="list" id="condList"></ul>
             </section>
 
-            <section class="section">
-              <div class="section__head">
-                <h2 class="section__title">최근 알림</h2>
-                <a class="section__link" href="#history">전체 보기</a>
+            <section class="group">
+              <div class="group__head">
+                <h2>최근 활동</h2>
+                <a class="group__link" href="#history">모두 보기</a>
               </div>
-              <ul class="card list" id="recentEvents"></ul>
+              <ul class="list timeline" id="recentEvents"></ul>
             </section>
           </div>
         </section>
 
         <!-- 기록 -->
         <section class="panel" id="panel-history" data-tab="history" aria-label="기록" hidden>
-          <header class="page-header">
-            <h1 class="page-title">기록</h1>
-          </header>
+          <header class="nav"><span class="nav__title" data-nav-title>기록</span></header>
           <div class="page">
+            <div class="large-head"><h1 class="large-title">기록</h1></div>
             <div class="segmented" role="tablist" aria-label="기록 종류">
-              <button type="button" role="tab" data-seg="events" aria-selected="true">알림</button>
+              <button type="button" role="tab" data-seg="events" aria-selected="true">활동</button>
               <button type="button" role="tab" data-seg="sensor" aria-selected="false">센서</button>
             </div>
 
@@ -155,17 +138,17 @@
             </div>
 
             <div data-seg-panel="sensor" hidden>
-              <section class="card chart-card">
+              <section class="chart-card">
                 <div class="chart-card__head">
-                  <h2 class="chart-card__title">온도</h2>
+                  <span class="tile__label">온도</span>
                   <span class="chart-card__now" id="chartTempNow">-- °C</span>
                 </div>
                 <svg class="chart" id="chartTemp" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"></svg>
                 <dl class="stats" id="statsTemp"></dl>
               </section>
-              <section class="card chart-card">
+              <section class="chart-card">
                 <div class="chart-card__head">
-                  <h2 class="chart-card__title">습도</h2>
+                  <span class="tile__label">습도</span>
                   <span class="chart-card__now" id="chartHumNow">-- %</span>
                 </div>
                 <svg class="chart" id="chartHum" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -173,158 +156,131 @@
               </section>
             </div>
 
-            <button type="button" class="btn btn-ghost btn-block danger-text" id="clearHistory">
-              <svg class="i i-sm" aria-hidden="true"><use href="#i-trash" /></svg>
-              기록 모두 지우기
-            </button>
+            <ul class="list">
+              <li><button type="button" class="row row--button danger-text" id="clearHistory">기록 지우기</button></li>
+            </ul>
           </div>
         </section>
 
         <!-- 안경 -->
         <section class="panel" id="panel-device" data-tab="device" aria-label="안경" hidden>
-          <header class="page-header">
-            <h1 class="page-title">안경</h1>
-          </header>
+          <header class="nav"><span class="nav__title" data-nav-title>안경</span></header>
           <div class="page">
-            <article class="card device-hero">
-              <div class="device-hero__icon" aria-hidden="true">
-                <svg class="i i-lg"><use href="#i-glasses" /></svg>
-              </div>
-              <div>
-                <h2 class="device-hero__title">화상 위험 알림 스마트 AI 안경</h2>
-                <p class="device-hero__sub" id="deviceState">연결 확인 중</p>
-              </div>
+            <div class="large-head"><h1 class="large-title">안경</h1></div>
+
+            <article class="device">
+              <svg class="device__art" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-glasses" /></svg>
+              <h2 class="device__name">화상 위험 알림 AI 안경</h2>
+              <p class="device__state"><i class="dot"></i><span id="deviceState">데이터 없음</span></p>
             </article>
 
-            <section class="section">
-              <h2 class="section__title">이렇게 작동해요</h2>
-              <ol class="card steps">
-                <li>
-                  <span class="steps__num">1</span>
-                  <div><strong>주변 정보 수집</strong></div>
-                </li>
-                <li>
-                  <span class="steps__num">2</span>
-                  <div><strong>위험 판단</strong></div>
-                </li>
-                <li>
-                  <span class="steps__num">3</span>
-                  <div><strong>음성·방향 안내</strong></div>
-                </li>
-                <li>
-                  <span class="steps__num">4</span>
-                  <div><strong>보호자에게 전달</strong></div>
-                </li>
+            <section class="group">
+              <div class="group__head"><h2>작동 방식</h2></div>
+              <ol class="list steps">
+                <li class="row"><span class="steps__n">1</span><span class="row__title">주변 정보 수집</span></li>
+                <li class="row"><span class="steps__n">2</span><span class="row__title">위험 판단</span></li>
+                <li class="row"><span class="steps__n">3</span><span class="row__title">음성·방향 안내</span></li>
+                <li class="row"><span class="steps__n">4</span><span class="row__title">보호자에게 전달</span></li>
               </ol>
             </section>
 
-            <section class="section">
-              <h2 class="section__title">구성 부품</h2>
-              <ul class="card list parts">
-                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-scan-eye" /></svg></span><div class="row__main"><span class="row__title">허스키렌즈</span><span class="row__sub">AI 카메라</span></div></li>
-                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-thermometer" /></svg></span><div class="row__main"><span class="row__title">DHT22 온습도 센서</span><span class="row__sub">온도·습도</span></div></li>
-                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-wind" /></svg></span><div class="row__main"><span class="row__title">불꽃 센서 · MQ-2</span><span class="row__sub">불꽃·연기·가스</span></div></li>
-                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-cpu" /></svg></span><div class="row__main"><span class="row__title">ESP32 제어보드</span><span class="row__sub">판단·Wi-Fi 전송</span></div></li>
-                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-volume" /></svg></span><div class="row__main"><span class="row__title">음성 모듈 · 부저</span><span class="row__sub">음성·경고음</span></div></li>
-                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-compass" /></svg></span><div class="row__main"><span class="row__title">서보모터 2개</span><span class="row__sub">방향 안내</span></div></li>
+            <section class="group">
+              <div class="group__head"><h2>구성 부품</h2></div>
+              <ul class="list">
+                <li class="row"><span class="row__title">허스키렌즈</span><span class="row__detail">AI 카메라</span></li>
+                <li class="row"><span class="row__title">DHT22</span><span class="row__detail">온도·습도</span></li>
+                <li class="row"><span class="row__title">불꽃 센서 · MQ-2</span><span class="row__detail">불꽃·가스</span></li>
+                <li class="row"><span class="row__title">ESP32</span><span class="row__detail">판단·Wi-Fi</span></li>
+                <li class="row"><span class="row__title">DFPlayer · 부저</span><span class="row__detail">음성·경고음</span></li>
+                <li class="row"><span class="row__title">서보모터 2개</span><span class="row__detail">방향 안내</span></li>
               </ul>
             </section>
 
-            <section class="section">
-              <h2 class="section__title">시험 결과</h2>
+            <section class="group">
+              <div class="group__head"><h2>시험 결과</h2></div>
               <div class="kpis">
-                <div class="kpi"><span class="kpi__value">1.2<small>초</small></span><span class="kpi__label">불꽃 인식</span></div>
-                <div class="kpi"><span class="kpi__value">0.5<small>초</small></span><span class="kpi__label">비상구 인식</span></div>
-                <div class="kpi"><span class="kpi__value">95<small>%</small></span><span class="kpi__label">동작 성공</span></div>
+                <div class="kpi"><span class="tile__label">불꽃 인식</span><span class="kpi__value">1.2<small>초</small></span></div>
+                <div class="kpi"><span class="tile__label">비상구 인식</span><span class="kpi__value">0.5<small>초</small></span></div>
+                <div class="kpi"><span class="tile__label">동작 성공</span><span class="kpi__value">19<small>/20</small></span></div>
               </div>
             </section>
           </div>
         </section>
 
-        <!-- 메뉴 -->
-        <section class="panel" id="panel-menu" data-tab="menu" aria-label="메뉴" hidden>
-          <header class="page-header">
-            <h1 class="page-title">메뉴</h1>
-          </header>
+        <!-- 설정 -->
+        <section class="panel" id="panel-menu" data-tab="menu" aria-label="설정" hidden>
+          <header class="nav"><span class="nav__title" data-nav-title>설정</span></header>
           <div class="page">
-            <section class="section">
-              <h2 class="section__title">보호 대상자</h2>
-              <button type="button" class="card profile" id="editProfile">
-                <span class="profile__avatar" id="profileInitial" aria-hidden="true">홍</span>
-                <span class="profile__main">
-                  <span class="profile__name" id="profileName">홍길동님</span>
-                  <span class="profile__sub" id="profileSub">거실 · 010-1234-5678</span>
-                </span>
-                <svg class="i i-sm muted" aria-hidden="true"><use href="#i-pencil" /></svg>
-              </button>
-            </section>
+            <div class="large-head"><h1 class="large-title">설정</h1></div>
 
-            <section class="section">
-              <h2 class="section__title">알림</h2>
-              <ul class="card list">
+            <ul class="list">
+              <li>
+                <button type="button" class="row row--button profile" id="editProfile">
+                  <span class="profile__avatar" id="profileInitial" aria-hidden="true">홍</span>
+                  <span class="row__main">
+                    <span class="profile__name" id="profileName">홍길동님</span>
+                    <span class="row__sub" id="profileSub">거실 · 010-1234-5678</span>
+                  </span>
+                  <svg class="i chev" aria-hidden="true"><use href="#i-chevron-right" /></svg>
+                </button>
+              </li>
+            </ul>
+
+            <section class="group">
+              <div class="group__head"><h2>알림</h2></div>
+              <ul class="list">
                 <li class="row">
-                  <span class="row__icon"><svg class="i i-sm"><use href="#i-bell" /></svg></span>
-                  <div class="row__main">
+                  <span class="app-icon" style="--c: var(--red)"><svg class="i"><use href="#i-bell" /></svg></span>
+                  <span class="row__main">
                     <span class="row__title">푸시 알림</span>
                     <span class="row__sub" id="notifySub" hidden></span>
-                  </div>
-                  <button type="button" class="btn btn-sm btn-secondary" id="notifyBtn">켜기</button>
+                  </span>
+                  <button type="button" class="btn btn-sm btn-tinted" id="notifyBtn">켜기</button>
                 </li>
                 <li class="row">
-                  <span class="row__icon"><svg class="i i-sm"><use href="#i-volume" /></svg></span>
-                  <label class="row__main" for="soundToggle">
-                    <span class="row__title">경보음</span>
-                  </label>
+                  <span class="app-icon" style="--c: var(--orange)"><svg class="i"><use href="#i-volume" /></svg></span>
+                  <label class="row__main" for="soundToggle"><span class="row__title">경보음</span></label>
                   <input type="checkbox" class="switch" id="soundToggle" switch />
                 </li>
               </ul>
             </section>
 
-            <section class="section">
-              <h2 class="section__title">화면</h2>
+            <section class="group">
+              <div class="group__head"><h2>화면</h2></div>
               <div class="segmented" id="themeSeg" role="radiogroup" aria-label="테마">
-                <button type="button" role="radio" data-theme-opt="system">시스템</button>
+                <button type="button" role="radio" data-theme-opt="system">자동</button>
                 <button type="button" role="radio" data-theme-opt="light">라이트</button>
                 <button type="button" role="radio" data-theme-opt="dark">다크</button>
               </div>
             </section>
 
-            <section class="section">
-              <h2 class="section__title">시연</h2>
-              <ul class="card list">
+            <section class="group">
+              <div class="group__head"><h2>시연</h2></div>
+              <ul class="list">
                 <li class="row">
-                  <span class="row__icon"><svg class="i i-sm"><use href="#i-play" /></svg></span>
-                  <label class="row__main" for="demoToggle">
-                    <span class="row__title">시연 모드</span>
-                  </label>
+                  <span class="app-icon" style="--c: var(--green)"><svg class="i"><use href="#i-play" /></svg></span>
+                  <label class="row__main" for="demoToggle"><span class="row__title">시연 모드</span></label>
                   <input type="checkbox" class="switch" id="demoToggle" switch />
                 </li>
                 <li class="row demo-actions" id="demoActions" hidden>
-                  <button type="button" class="btn btn-destructive" id="demoFire">
-                    <svg class="i i-sm" aria-hidden="true"><use href="#i-flame" /></svg>
-                    화재 상황 재현
-                  </button>
-                  <button type="button" class="btn btn-secondary" id="demoClear">정상으로 복구</button>
+                  <button type="button" class="btn btn-danger" id="demoFire">화재 재현</button>
+                  <button type="button" class="btn btn-tinted" id="demoClear">정상 복구</button>
                 </li>
               </ul>
             </section>
 
-            <section class="section">
-              <h2 class="section__title">앱 정보</h2>
-              <ul class="card list">
+            <section class="group">
+              <div class="group__head"><h2>정보</h2></div>
+              <ul class="list">
                 <li class="row" id="installRow">
-                  <span class="row__icon"><svg class="i i-sm"><use href="#i-share" /></svg></span>
-                  <div class="row__main">
-                    <span class="row__title">홈 화면에 추가</span>
-                    <span class="row__sub">공유 → 홈 화면에 추가</span>
-                  </div>
+                  <span class="app-icon" style="--c: var(--blue)"><svg class="i"><use href="#i-share" /></svg></span>
+                  <span class="row__title">홈 화면에 추가</span>
+                  <span class="row__detail">공유 → 홈 화면에 추가</span>
                 </li>
                 <li class="row">
-                  <span class="row__icon"><svg class="i i-sm"><use href="#i-trophy" /></svg></span>
-                  <div class="row__main">
-                    <span class="row__title">제2회 전국 고교생 로봇 기술경진대회</span>
-                    <span class="row__sub">민족사관고등학교 Qubit</span>
-                  </div>
+                  <span class="app-icon" style="--c: var(--gray)"><svg class="i"><use href="#i-trophy" /></svg></span>
+                  <span class="row__title">제작</span>
+                  <span class="row__detail">민사고 Qubit</span>
                 </li>
               </ul>
             </section>
@@ -333,43 +289,37 @@
       </main>
 
       <nav class="tabbar" aria-label="주요 메뉴">
-        <a href="#home" data-tab-link="home" aria-label="홈">
-          <svg class="i"><use href="#i-house" /></svg>
-          <span class="tabbar__badge" id="homeBadge" hidden></span>
+        <a href="#home" data-tab-link="home">
+          <span class="tabbar__icon"><svg class="i"><use href="#i-house" /></svg><span class="tabbar__badge" id="homeBadge" hidden></span></span>
+          <span class="tabbar__label">홈</span>
         </a>
-        <a href="#history" data-tab-link="history" aria-label="기록">
-          <svg class="i"><use href="#i-history" /></svg>
+        <a href="#history" data-tab-link="history">
+          <span class="tabbar__icon"><svg class="i"><use href="#i-history" /></svg></span>
+          <span class="tabbar__label">기록</span>
         </a>
-        <a href="#device" data-tab-link="device" aria-label="안경">
-          <svg class="i"><use href="#i-glasses" /></svg>
+        <a href="#device" data-tab-link="device">
+          <span class="tabbar__icon"><svg class="i"><use href="#i-glasses" /></svg></span>
+          <span class="tabbar__label">안경</span>
         </a>
-        <a href="#menu" data-tab-link="menu" aria-label="메뉴">
-          <svg class="i"><use href="#i-shapes" /></svg>
+        <a href="#menu" data-tab-link="menu">
+          <span class="tabbar__icon"><svg class="i"><use href="#i-settings" /></svg></span>
+          <span class="tabbar__label">설정</span>
         </a>
       </nav>
     </div>
 
-    <!-- 보호 대상자 정보 편집 시트 -->
     <dialog class="sheet" id="profileSheet" aria-labelledby="profileSheetTitle">
       <form method="dialog" class="sheet__inner" id="profileForm">
-        <div class="sheet__grabber" aria-hidden="true"></div>
         <div class="sheet__head">
-          <button type="button" class="btn btn-ghost btn-sm" data-close>취소</button>
-          <h2 id="profileSheetTitle">보호 대상자 정보</h2>
-          <button type="submit" class="btn btn-ghost btn-sm primary-text" value="save">저장</button>
+          <button type="button" class="link-btn" data-close>취소</button>
+          <h2 id="profileSheetTitle">보호 대상자</h2>
+          <button type="submit" class="link-btn link-btn--strong" value="save">완료</button>
         </div>
-        <label class="field">
-          <span class="field__label">이름</span>
-          <input name="name" class="input" autocomplete="off" maxlength="20" required />
-        </label>
-        <label class="field">
-          <span class="field__label">위치</span>
-          <input name="place" class="input" autocomplete="off" maxlength="30" placeholder="예: 거실" />
-        </label>
-        <label class="field">
-          <span class="field__label">연락처</span>
-          <input name="phone" class="input" type="tel" inputmode="tel" autocomplete="off" maxlength="20" placeholder="010-0000-0000" />
-        </label>
+        <ul class="list form-list">
+          <li class="row"><label class="field"><span class="field__label">이름</span><input name="name" class="input" autocomplete="off" maxlength="20" required /></label></li>
+          <li class="row"><label class="field"><span class="field__label">위치</span><input name="place" class="input" autocomplete="off" maxlength="30" placeholder="거실" /></label></li>
+          <li class="row"><label class="field"><span class="field__label">연락처</span><input name="phone" class="input" type="tel" inputmode="tel" autocomplete="off" maxlength="20" placeholder="010-0000-0000" /></label></li>
+        </ul>
       </form>
     </dialog>
 
@@ -405,6 +355,7 @@
         <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></symbol>
         <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
         <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
       </defs>
     </svg>
   </body>
