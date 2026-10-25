@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Qubit 가디언</title>
+    <meta
+      name="description"
+      content="화상 위험 알림 스마트 AI 안경의 보호자용 실시간 모니터링 앱"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- 홈 화면에 추가하면 주소창 없이 앱처럼 열린다. iOS 웹 푸시 알림도 이 상태에서만 켤 수 있다. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Qubit 가디언" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="icons/icon-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <link rel="stylesheet" href="app.css" />
+    <script>
+      // 첫 그림부터 저장된 테마로 칠해 흰 화면이 번쩍이지 않게 한다.
+      try {
+        var t = JSON.parse(localStorage.getItem("qubit.settings") || "{}").theme;
+        var dark =
+          t === "dark" ||
+          ((!t || t === "system") &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
+    <script type="module" src="app.js"></script>
+  </head>
+
+  <body>
+    <div class="shell" id="shell">
+      <!-- 화재가 나면 어느 탭에 있든 맨 위에 뜬다. 누르면 홈으로 간다. -->
+      <button type="button" class="alert-bar" id="alertBar" hidden>
+        <span class="alert-bar__dot" aria-hidden="true"></span>
+        <span class="alert-bar__text">화재 감지 · 지금 확인하세요</span>
+        <svg class="i" aria-hidden="true"><use href="#i-chevron-right" /></svg>
+      </button>
+
+      <main class="panels">
+        <!-- 홈 -->
+        <section class="panel" id="panel-home" data-tab="home" aria-label="홈">
+          <header class="page-header">
+            <h1 class="page-title">안전 모니터링</h1>
+            <span class="conn" id="connPill" data-state="connecting">
+              <span class="conn__dot" aria-hidden="true"></span>
+              <span class="conn__text">연결 중</span>
+            </span>
+          </header>
+
+          <div class="page">
+            <article class="status" id="statusCard" data-state="safe">
+              <div class="status__top">
+                <div class="status__icon" aria-hidden="true">
+                  <svg class="i i-lg status__icon-safe"><use href="#i-shield-check" /></svg>
+                  <svg class="i i-lg status__icon-fire"><use href="#i-flame" /></svg>
+                </div>
+                <div class="status__body">
+                  <p class="status__eyebrow" id="statusWho">홍길동님 · 거실</p>
+                  <h2 class="status__title" id="statusTitle">안전합니다</h2>
+                  <p class="status__meta" id="statusMeta">데이터를 기다리는 중</p>
+                </div>
+              </div>
+
+              <div class="status__actions">
+                <a class="btn btn-white" href="tel:119">
+                  <svg class="i" aria-hidden="true"><use href="#i-siren" /></svg>
+                  119 신고
+                </a>
+                <a class="btn btn-white-ghost" id="callWard" href="tel:01012345678">
+                  <svg class="i" aria-hidden="true"><use href="#i-phone" /></svg>
+                  전화하기
+                </a>
+                <button type="button" class="btn btn-white-ghost btn-block" id="ackBtn">
+                  경보 확인했어요
+                </button>
+              </div>
+            </article>
+
+            <section class="section">
+              <div class="section__head">
+                <h2 class="section__title">실시간 환경</h2>
+                <span class="section__aside" id="lastUpdate">수신 대기</span>
+              </div>
+              <div class="metrics">
+                <article class="metric" id="metricTemp">
+                  <div class="metric__label">
+                    <svg class="i i-sm" aria-hidden="true"><use href="#i-thermometer" /></svg>
+                    온도
+                  </div>
+                  <p class="metric__value"><span data-value>--</span><small>°C</small></p>
+                  <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+                    <path class="spark__line" d="" />
+                  </svg>
+                </article>
+                <article class="metric" id="metricHum">
+                  <div class="metric__label">
+                    <svg class="i i-sm" aria-hidden="true"><use href="#i-droplets" /></svg>
+                    습도
+                  </div>
+                  <p class="metric__value"><span data-value>--</span><small>%</small></p>
+                  <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+                    <path class="spark__line" d="" />
+                  </svg>
+                </article>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section__head">
+                <h2 class="section__title">위험 판단 조건</h2>
+                <span class="section__aside" id="condCount">0 / 4</span>
+              </div>
+              <ul class="card list" id="condList"></ul>
+              <p class="hint">
+                안경 카메라가 불꽃을 인식한 뒤, 네 조건이 모두 맞으면 긴급 경고와 보호자 알림을 보내요.
+              </p>
+            </section>
+
+            <section class="section">
+              <div class="section__head">
+                <h2 class="section__title">최근 알림</h2>
+                <a class="section__link" href="#history">전체 보기</a>
+              </div>
+              <ul class="card list" id="recentEvents"></ul>
+            </section>
+          </div>
+        </section>
+
+        <!-- 기록 -->
+        <section class="panel" id="panel-history" data-tab="history" aria-label="기록" hidden>
+          <header class="page-header">
+            <h1 class="page-title">기록</h1>
+          </header>
+          <div class="page">
+            <div class="segmented" role="tablist" aria-label="기록 종류">
+              <button type="button" role="tab" data-seg="events" aria-selected="true">알림</button>
+              <button type="button" role="tab" data-seg="sensor" aria-selected="false">센서</button>
+            </div>
+
+            <div data-seg-panel="events">
+              <div id="eventGroups"></div>
+            </div>
+
+            <div data-seg-panel="sensor" hidden>
+              <section class="card chart-card">
+                <div class="chart-card__head">
+                  <h2 class="chart-card__title">온도</h2>
+                  <span class="chart-card__now" id="chartTempNow">-- °C</span>
+                </div>
+                <svg class="chart" id="chartTemp" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+                <dl class="stats" id="statsTemp"></dl>
+              </section>
+              <section class="card chart-card">
+                <div class="chart-card__head">
+                  <h2 class="chart-card__title">습도</h2>
+                  <span class="chart-card__now" id="chartHumNow">-- %</span>
+                </div>
+                <svg class="chart" id="chartHum" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+                <dl class="stats" id="statsHum"></dl>
+              </section>
+              <p class="hint">이 기기에서 받은 최근 120개 측정값이에요. 점선은 위험 기준선이에요.</p>
+            </div>
+
+            <button type="button" class="btn btn-ghost btn-block danger-text" id="clearHistory">
+              <svg class="i i-sm" aria-hidden="true"><use href="#i-trash" /></svg>
+              기록 모두 지우기
+            </button>
+          </div>
+        </section>
+
+        <!-- 안경 -->
+        <section class="panel" id="panel-device" data-tab="device" aria-label="안경" hidden>
+          <header class="page-header">
+            <h1 class="page-title">안경</h1>
+          </header>
+          <div class="page">
+            <article class="card device-hero">
+              <div class="device-hero__icon" aria-hidden="true">
+                <svg class="i i-lg"><use href="#i-glasses" /></svg>
+              </div>
+              <div>
+                <h2 class="device-hero__title">화상 위험 알림 스마트 AI 안경</h2>
+                <p class="device-hero__sub" id="deviceState">연결 확인 중</p>
+              </div>
+            </article>
+
+            <section class="section">
+              <h2 class="section__title">이렇게 작동해요</h2>
+              <ol class="card steps">
+                <li>
+                  <span class="steps__num">1</span>
+                  <div><strong>주변 정보 수집</strong><p>안경의 AI 카메라와 환경 센서가 불꽃·비상구·온습도·가스를 살펴요.</p></div>
+                </li>
+                <li>
+                  <span class="steps__num">2</span>
+                  <div><strong>위험 판단</strong><p>불꽃을 인식하면 먼저 주의를 알리고, 센서 네 가지로 한 번 더 확인해요.</p></div>
+                </li>
+                <li>
+                  <span class="steps__num">3</span>
+                  <div><strong>음성·방향 안내</strong><p>음성과 부저로 알리고, 서보모터가 불꽃 반대쪽 회피 방향을 촉각으로 알려 줘요.</p></div>
+                </li>
+                <li>
+                  <span class="steps__num">4</span>
+                  <div><strong>보호자에게 전달</strong><p>Wi-Fi로 상태를 보내 이 앱과 스마트폰 알림으로 바로 확인할 수 있어요.</p></div>
+                </li>
+              </ol>
+            </section>
+
+            <section class="section">
+              <h2 class="section__title">구성 부품</h2>
+              <ul class="card list parts">
+                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-scan-eye" /></svg></span><div class="row__main"><span class="row__title">허스키렌즈</span><span class="row__sub">불꽃(ID 1)과 비상구 표지판(ID 2)을 인식하는 AI 카메라</span></div></li>
+                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-thermometer" /></svg></span><div class="row__main"><span class="row__title">DHT22 온습도 센서</span><span class="row__sub">주변 공기의 온도와 상대습도 측정</span></div></li>
+                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-wind" /></svg></span><div class="row__main"><span class="row__title">불꽃 센서 · MQ-2</span><span class="row__sub">불꽃의 광학 신호, 연기·가연성 가스 반응 확인</span></div></li>
+                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-cpu" /></svg></span><div class="row__main"><span class="row__title">ESP32 제어보드</span><span class="row__sub">센서값 판단, Wi-Fi로 상태 전송</span></div></li>
+                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-volume" /></svg></span><div class="row__main"><span class="row__title">음성 모듈 · 부저</span><span class="row__sub">DFPlayer Mini 안내 음성과 주의 환기음</span></div></li>
+                <li class="row"><span class="row__icon"><svg class="i i-sm"><use href="#i-compass" /></svg></span><div class="row__main"><span class="row__title">서보모터 2개</span><span class="row__sub">영상 좌표를 0~180°로 바꿔 방향을 촉각으로 안내</span></div></li>
+              </ul>
+            </section>
+
+            <section class="section">
+              <h2 class="section__title">시험 결과</h2>
+              <div class="kpis">
+                <div class="kpi"><span class="kpi__value">1.2<small>초</small></span><span class="kpi__label">불꽃 인식</span></div>
+                <div class="kpi"><span class="kpi__value">0.5<small>초</small></span><span class="kpi__label">비상구 인식</span></div>
+                <div class="kpi"><span class="kpi__value">95<small>%</small></span><span class="kpi__label">동작 성공 19/20</span></div>
+              </div>
+              <p class="hint">약 30cm 거리 라이터 불꽃과 학습한 비상구 표지판으로 시험한 결과예요. 실제 환경 전반의 정확도를 뜻하지는 않아요.</p>
+            </section>
+          </div>
+        </section>
+
+        <!-- 메뉴 -->
+        <section class="panel" id="panel-menu" data-tab="menu" aria-label="메뉴" hidden>
+          <header class="page-header">
+            <h1 class="page-title">메뉴</h1>
+          </header>
+          <div class="page">
+            <section class="section">
+              <h2 class="section__title">보호 대상자</h2>
+              <button type="button" class="card profile" id="editProfile">
+                <span class="profile__avatar" id="profileInitial" aria-hidden="true">홍</span>
+                <span class="profile__main">
+                  <span class="profile__name" id="profileName">홍길동님</span>
+                  <span class="profile__sub" id="profileSub">거실 · 010-1234-5678</span>
+                </span>
+                <svg class="i i-sm muted" aria-hidden="true"><use href="#i-pencil" /></svg>
+              </button>
+            </section>
+
+            <section class="section">
+              <h2 class="section__title">알림</h2>
+              <ul class="card list">
+                <li class="row">
+                  <span class="row__icon"><svg class="i i-sm"><use href="#i-bell" /></svg></span>
+                  <div class="row__main">
+                    <span class="row__title">푸시 알림</span>
+                    <span class="row__sub" id="notifySub">화재가 감지되면 잠금 화면에 알려요</span>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-secondary" id="notifyBtn">켜기</button>
+                </li>
+                <li class="row">
+                  <span class="row__icon"><svg class="i i-sm"><use href="#i-volume" /></svg></span>
+                  <label class="row__main" for="soundToggle">
+                    <span class="row__title">경보음</span>
+                    <span class="row__sub">앱이 열려 있을 때 경보음을 울려요</span>
+                  </label>
+                  <input type="checkbox" class="switch" id="soundToggle" switch />
+                </li>
+              </ul>
+            </section>
+
+            <section class="section">
+              <h2 class="section__title">화면</h2>
+              <div class="segmented" id="themeSeg" role="radiogroup" aria-label="테마">
+                <button type="button" role="radio" data-theme-opt="system">시스템</button>
+                <button type="button" role="radio" data-theme-opt="light">라이트</button>
+                <button type="button" role="radio" data-theme-opt="dark">다크</button>
+              </div>
+            </section>
+
+            <section class="section">
+              <h2 class="section__title">시연</h2>
+              <ul class="card list">
+                <li class="row">
+                  <span class="row__icon"><svg class="i i-sm"><use href="#i-play" /></svg></span>
+                  <label class="row__main" for="demoToggle">
+                    <span class="row__title">시연 모드</span>
+                    <span class="row__sub">실제 안경 대신 가상 데이터로 화면을 보여 줘요</span>
+                  </label>
+                  <input type="checkbox" class="switch" id="demoToggle" switch />
+                </li>
+                <li class="row demo-actions" id="demoActions" hidden>
+                  <button type="button" class="btn btn-destructive" id="demoFire">
+                    <svg class="i i-sm" aria-hidden="true"><use href="#i-flame" /></svg>
+                    화재 상황 재현
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="demoClear">정상으로 복구</button>
+                </li>
+              </ul>
+            </section>
+
+            <section class="section">
+              <h2 class="section__title">앱 정보</h2>
+              <ul class="card list">
+                <li class="row" id="installRow">
+                  <span class="row__icon"><svg class="i i-sm"><use href="#i-share" /></svg></span>
+                  <div class="row__main">
+                    <span class="row__title">홈 화면에 추가</span>
+                    <span class="row__sub">Safari 공유 버튼 → ‘홈 화면에 추가’를 누르면 앱처럼 쓰고 알림도 받을 수 있어요</span>
+                  </div>
+                </li>
+                <li class="row">
+                  <span class="row__icon"><svg class="i i-sm"><use href="#i-trophy" /></svg></span>
+                  <div class="row__main">
+                    <span class="row__title">2026년 제2회 전국 고교생 로봇 기술경진대회</span>
+                    <span class="row__sub">민족사관고등학교 Qubit · 한국폴리텍대학 로봇캠퍼스</span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <nav class="tabbar" aria-label="주요 메뉴">
+        <a href="#home" data-tab-link="home" aria-label="홈">
+          <svg class="i"><use href="#i-house" /></svg>
+          <span class="tabbar__badge" id="homeBadge" hidden></span>
+        </a>
+        <a href="#history" data-tab-link="history" aria-label="기록">
+          <svg class="i"><use href="#i-history" /></svg>
+        </a>
+        <a href="#device" data-tab-link="device" aria-label="안경">
+          <svg class="i"><use href="#i-glasses" /></svg>
+        </a>
+        <a href="#menu" data-tab-link="menu" aria-label="메뉴">
+          <svg class="i"><use href="#i-shapes" /></svg>
+        </a>
+      </nav>
+    </div>
+
+    <!-- 보호 대상자 정보 편집 시트 -->
+    <dialog class="sheet" id="profileSheet" aria-labelledby="profileSheetTitle">
+      <form method="dialog" class="sheet__inner" id="profileForm">
+        <div class="sheet__grabber" aria-hidden="true"></div>
+        <div class="sheet__head">
+          <button type="button" class="btn btn-ghost btn-sm" data-close>취소</button>
+          <h2 id="profileSheetTitle">보호 대상자 정보</h2>
+          <button type="submit" class="btn btn-ghost btn-sm primary-text" value="save">저장</button>
+        </div>
+        <label class="field">
+          <span class="field__label">이름</span>
+          <input name="name" class="input" autocomplete="off" maxlength="20" required />
+        </label>
+        <label class="field">
+          <span class="field__label">위치</span>
+          <input name="place" class="input" autocomplete="off" maxlength="30" placeholder="예: 거실" />
+        </label>
+        <label class="field">
+          <span class="field__label">연락처</span>
+          <input name="phone" class="input" type="tel" inputmode="tel" autocomplete="off" maxlength="20" placeholder="010-0000-0000" />
+        </label>
+        <p class="hint">이 정보는 이 기기에만 저장돼요.</p>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- 아이콘: lucide (ISC) -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-house" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+        <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+        <symbol id="i-glasses" viewBox="0 0 24 24"><circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/></symbol>
+        <symbol id="i-shapes" viewBox="0 0 24 24"><path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/></symbol>
+        <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+        <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+        <symbol id="i-thermometer" viewBox="0 0 24 24"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></symbol>
+        <symbol id="i-droplets" viewBox="0 0 24 24"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></symbol>
+        <symbol id="i-wind" viewBox="0 0 24 24"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></symbol>
+        <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+        <symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol>
+        <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+        <symbol id="i-door" viewBox="0 0 24 24"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></symbol>
+        <symbol id="i-scan-eye" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="1"/><path d="M18.944 12.33a1 1 0 0 0 0-.66 7.5 7.5 0 0 0-13.888 0 1 1 0 0 0 0 .66 7.5 7.5 0 0 0 13.888 0"/></symbol>
+        <symbol id="i-cpu" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></symbol>
+        <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></symbol>
+        <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/></symbol>
+        <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+        <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+        <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></symbol>
+        <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+        <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></symbol>
+      </defs>
+    </svg>
+  </body>
+</html>
