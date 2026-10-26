@@ -19,7 +19,6 @@ const EVENT_TEXT = {
   ack: { title: "경보 확인", icon: "i-check" },
   online: { title: "실시간 연결됨", icon: "i-wifi" },
   offline: { title: "연결 끊김", icon: "i-wifi-off" },
-  demo: { title: "시연 모드", icon: "i-play" },
 };
 
 const MAX_READINGS = 120;
@@ -63,7 +62,7 @@ const state = {
   acked: store.get("acked", false),
   lastAt: null,
   readings: store.get("readings", []),
-  events: store.get("events", []),
+  events: store.get("events", []).filter((e) => e.kind !== "demo" && !e.demo),
   profile: { name: "홍길동", place: "거실", phone: "010-1234-5678", ...store.get("profile", {}) },
   settings: { theme: "system", sound: true, ...store.get("settings", {}) },
   statusVisible: true,
@@ -300,7 +299,7 @@ function renderStatus() {
   const live = state.demo || (state.real.lastAt && Date.now() - state.real.lastAt < 60000);
   $(".device").classList.toggle("is-live", Boolean(live));
   $("#deviceState").textContent = state.demo
-    ? "시연 모드"
+    ? relative(Date.now())
     : state.real.lastAt
       ? `${relative(state.real.lastAt)} 수신`
       : hasValues(state.real.values)
@@ -310,21 +309,21 @@ function renderStatus() {
 
 function renderConn() {
   const pill = $("#connPill");
-  const s = state.demo ? "demo" : state.conn;
+  const s = state.demo ? "online" : state.conn;
   pill.dataset.state = s;
-  $(".conn__text", pill).textContent = { demo: "시연 모드", online: "실시간", offline: "연결 끊김", connecting: "연결 중" }[s];
+  $(".conn__text", pill).textContent = { online: "실시간", offline: "연결 끊김", connecting: "연결 중" }[s];
 }
 
 // 링·네스트 앱처럼 왼쪽에 시각, 가운데 점, 오른쪽에 내용을 둔 타임라인.
 function eventRow(e, rel) {
   const meta = EVENT_TEXT[e.kind] || { title: e.kind };
-  const title = e.kind === "demo" ? (e.on ? "시연 모드 시작" : "시연 모드 종료") : meta.title;
+  const title = meta.title;
   const sub = e.kind === "fire" ? escapeHtml(state.profile.place || "") : "";
   const when = rel && Date.now() - e.t < 3600000 ? relative(e.t) : timeFmt.format(e.t);
   return `<li class="row" data-kind="${e.kind}">
     <span class="tl__time">${when}</span>
     <span class="tl__mark" aria-hidden="true"></span>
-    <span class="tl__body">${title}${e.demo ? " · 시연" : ""}${sub ? `<small>${sub}</small>` : ""}</span>
+    <span class="tl__body">${title}${sub ? `<small>${sub}</small>` : ""}</span>
   </li>`;
 }
 
@@ -600,7 +599,6 @@ function setDemo(on) {
   state.demo = on;
   $("#demoActions").hidden = !on;
   $("#demoToggle").checked = on;
-  addEvent("demo", { on });
   if (on) {
     demoHistory = [];
     state.demoFire = false;
@@ -610,7 +608,6 @@ function setDemo(on) {
     for (let i = 0; i < 20; i++) demoTick();
     setFire(false, "demo");
     demoTimer = setInterval(demoTick, 1500);
-    toast("시연 모드 켜짐");
   } else {
     clearInterval(demoTimer);
     demoTimer = null;
@@ -627,7 +624,6 @@ function setDemo(on) {
     renderConditions();
     renderStatus();
     renderAlertChrome();
-    toast("시연 모드 꺼짐");
   }
   renderConn();
 }
@@ -640,16 +636,11 @@ function demoFire(on) {
   setTimeout(
     () => {
       if (!state.demo || state.demoFire !== on) return;
-      const before = state.events.length;
       setFire(on, "demo");
-      if (state.events.length > before) state.events[0].demo = true;
-      store.set("events", state.events);
-      renderEvents();
       if (on) location.hash = "home";
     },
     on ? 2500 : 800,
   );
-  toast(on ? "화재 재현 중…" : "복구 중…");
 }
 
 // ───────── 설정 ─────────
