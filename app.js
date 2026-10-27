@@ -274,7 +274,7 @@ function renderConditions() {
 function renderStatus() {
   const card = $("#statusCard");
   const p = state.profile;
-  $("#statusWho").textContent = p.place || "보호 대상자";
+  $("#statusWho").textContent = p.name ? `${p.name}님` : "보호 대상자";
 
   let mode = "unknown";
   if (state.fire === true) mode = "fire";
@@ -318,7 +318,7 @@ function renderConn() {
 function eventRow(e, rel) {
   const meta = EVENT_TEXT[e.kind] || { title: e.kind };
   const title = meta.title;
-  const sub = e.kind === "fire" ? escapeHtml(state.profile.place || "") : "";
+  const sub = "";
   const when = rel && Date.now() - e.t < 3600000 ? relative(e.t) : timeFmt.format(e.t);
   return `<li class="row" data-kind="${e.kind}">
     <span class="tl__time">${when}</span>
@@ -513,7 +513,7 @@ function stopAlarm() {
 function onFireStarted() {
   startAlarm();
   const p = state.profile;
-  const where = [p.name && `${p.name}님`, p.place].filter(Boolean).join(" ");
+  const where = p.name ? `${p.name}님` : "";
   const title = "🚨 화재가 감지되었어요";
   const body = `${where ? where + "의 " : ""}주변에서 화재 위험이 확인됐어요. 지금 확인하세요.`;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
