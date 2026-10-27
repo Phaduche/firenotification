@@ -571,6 +571,11 @@ async function requestNotify() {
 
 // ───────── 시연 모드 ─────────
 // 본선 시연용. 실제 Firebase 값은 계속 받아 두고, 화면만 가상 데이터로 바꾼다.
+// 시연 상태는 Firebase `demo`에 올려 두어 폰·패드가 함께 바뀌고, 안경(ESP32)도 `demo/fire`를 보고 소리·서보를 움직인다.
+
+const DEMO_FIRE_DELAY_MS = 3000;
+// Firebase에 연결되면 채워진다. 없으면 이 기기에서만 시연한다.
+let pushDemo = null;
 
 let demoTimer = null;
 let demoHistory = [];
@@ -628,19 +633,42 @@ function setDemo(on) {
   renderConn();
 }
 
+// 센서값이 먼저 오르고, 3초 뒤 화재 판정이 온다. 판정 시각은 누른 기기 한 곳에서만 정해 다른 기기와 어긋나지 않게 한다.
+let demoFireTimer = null;
 function demoFire(on) {
   if (!state.demo) return;
-  state.demoFire = on;
-  demoTick();
-  // 실제 안경처럼 센서가 먼저 오르고, 조건이 다 맞은 뒤 화재 판정이 온다.
-  setTimeout(
-    () => {
-      if (!state.demo || state.demoFire !== on) return;
-      setFire(on, "demo");
-      if (on) location.hash = "home";
-    },
-    on ? 2500 : 800,
-  );
+  clearTimeout(demoFireTimer);
+  if (pushDemo) {
+    pushDemo(on ? { rising: true, fire: false } : { rising: false, fire: false });
+    if (on) demoFireTimer = setTimeout(() => state.demo && state.demoFire && pushDemo({ fire: true }), DEMO_FIRE_DELAY_MS);
+    return;
+  }
+  applyDemoFire(on, false);
+  if (on) demoFireTimer = setTimeout(() => applyDemoFire(true, true), DEMO_FIRE_DELAY_MS);
+}
+
+function applyDemoFire(rising, fire) {
+  if (!state.demo) return;
+  const was = state.demoFire;
+  state.demoFire = rising || fire;
+  if (state.demoFire !== was) demoTick();
+  if (fire !== (state.fire === true)) {
+    setFire(fire, "demo");
+    if (fire) location.hash = "home";
+  }
+}
+
+function toggleDemo(on) {
+  clearTimeout(demoFireTimer);
+  if (pushDemo) pushDemo({ active: on, rising: false, fire: false });
+  else setDemo(on);
+}
+
+// 다른 기기(또는 이 기기)가 바꾼 시연 상태를 화면에 반영한다.
+function onRemoteDemo(d) {
+  const active = d?.active === true;
+  if (active !== state.demo) setDemo(active);
+  if (active) applyDemoFire(d.rising === true, d.fire === true);
 }
 
 // ───────── 설정 ─────────
@@ -677,7 +705,7 @@ function initMenu() {
   });
 
   $("#notifyBtn").addEventListener("click", requestNotify);
-  $("#demoToggle").addEventListener("change", (e) => setDemo(e.target.checked));
+  $("#demoToggle").addEventListener("change", (e) => toggleDemo(e.target.checked));
   $("#demoFire").addEventListener("click", () => demoFire(true));
   $("#demoClear").addEventListener("click", () => demoFire(false));
   $("#ackBtn").addEventListener("click", acknowledge);
@@ -765,13 +793,15 @@ async function connectFirebase() {
   }
   try {
     const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
-    const [{ initializeApp }, { getDatabase, ref, onValue }] = await Promise.all([
+    const [{ initializeApp }, { getDatabase, ref, onValue, update }] = await Promise.all([
       import(`${base}/firebase-app.js`),
       import(`${base}/firebase-database.js`),
     ]);
     const db = getDatabase(initializeApp(firebaseConfig));
 
     onValue(ref(db, ".info/connected"), (snap) => setConn(snap.val() === true));
+    pushDemo = (patch) => update(ref(db, "demo"), patch).catch((err) => console.error("시연 상태 전송 실패", err));
+    onValue(ref(db, "demo"), (snap) => onRemoteDemo(snap.val()));
     let firstSnapshot = true;
     onValue(ref(db, "sensor_data/current"), (snap) => {
       const d = snap.val();
