@@ -1190,6 +1190,170 @@ a {
   }
 }
 
+/* ───────── 아이패드 세로 (12.9인치 1024×1366 기준) ─────────
+ * 아이폰 화면을 그대로 늘리면 가운데 좁은 칸만 쓰고 아래가 텅 빈다.
+ * 홈은 상태 링과 센서를 2단으로 놓고, 탭바는 iPadOS처럼 아래 가운데에 뜬 알약으로 바꾼다. */
+@media (min-width: 768px) {
+  :root {
+    --tabbar-h: 0px;
+  }
+
+  .page {
+    max-width: 900px;
+    gap: 32px;
+    padding: 8px 40px 140px;
+  }
+  .large-title {
+    font-size: 40px;
+  }
+  .group__head h2 {
+    font-size: 22px;
+  }
+
+  /* 떠 있는 탭바 */
+  .tabbar {
+    position: absolute;
+    left: 50%;
+    bottom: calc(20px + var(--safe-b));
+    display: flex;
+    gap: 4px;
+    height: auto;
+    padding: 6px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    box-shadow:
+      0 0 0 0.5px var(--separator),
+      0 10px 30px rgba(0, 0, 0, 0.12);
+  }
+  .tabbar a {
+    flex-direction: row;
+    gap: 8px;
+    height: 48px;
+    padding: 0 22px;
+    border-radius: 999px;
+    transition: background-color 0.15s;
+  }
+  .tabbar a[aria-current="page"] {
+    background: var(--fill);
+  }
+  .tabbar__icon .i {
+    width: 22px;
+    height: 22px;
+  }
+  .tabbar__label {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .toast {
+    bottom: calc(100px + var(--safe-b));
+  }
+
+  /* 홈: 왼쪽 상태 링, 오른쪽 센서·기준, 아래 최근 활동 */
+  #panel-home .page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 20px;
+    row-gap: 32px;
+    align-items: start;
+  }
+  #panel-home .large-head,
+  #panel-home .page > section:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
+  #panel-home .hero {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    align-self: stretch;
+    justify-content: center;
+    gap: 28px;
+    padding: 32px 24px 24px;
+  }
+  #panel-home .page > section:nth-of-type(1),
+  #panel-home .page > section:nth-of-type(2) {
+    grid-column: 2;
+  }
+  .ring {
+    width: 240px;
+    height: 240px;
+  }
+  .ring__title {
+    font-size: 44px;
+  }
+  .ring__meta {
+    font-size: 15px;
+  }
+  .hero__foot {
+    font-size: 15px;
+  }
+  .condbar i {
+    height: 6px;
+  }
+  .tile {
+    padding: 16px 18px 14px;
+  }
+  .tile__value {
+    font-size: 48px;
+  }
+
+  /* 기록: 그래프 두 개를 나란히 */
+  #panel-history .segmented {
+    max-width: 360px;
+  }
+  [data-seg-panel="sensor"]:not([hidden]) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .chart {
+    height: 160px;
+  }
+  #panel-history .page > .list {
+    max-width: 360px;
+  }
+
+  /* 안경: 작동 방식과 부품을 나란히 */
+  #panel-device .page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 32px 20px;
+    align-items: start;
+  }
+  #panel-device .large-head,
+  #panel-device .device,
+  #panel-device .page > section:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
+  .device {
+    padding: 36px 24px 28px;
+  }
+  .device__art {
+    width: 110px;
+    height: 110px;
+  }
+  .kpi__value {
+    font-size: 34px;
+  }
+
+  /* 설정: 아이패드 설정 앱처럼 가운데 좁은 칸 */
+  #panel-menu .page {
+    max-width: 680px;
+  }
+
+  /* 편집 시트: 아래에서 올라오는 대신 가운데 폼 시트 */
+  .sheet {
+    max-width: 540px;
+    margin: auto;
+    border-radius: 14px;
+  }
+  .sheet[open] {
+    animation: fade 0.2s ease-out;
+  }
+  .sheet__inner {
+    padding: 14px 20px 24px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
