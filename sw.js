@@ -1,5 +1,5 @@
 // 앱 껍데기를 캐시해 두면 홈 화면 앱이 빠르게 열리고, 화재 알림을 잠금 화면에 띄울 수 있다.
-const CACHE = "qubit-guardian-v8";
+const CACHE = "qubit-guardian-v11";
 const SHELL = ["./", "index.html", "app.css", "app.js", "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {
@@ -21,7 +21,8 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
   event.respondWith(
-    fetch(event.request)
+    // HTTP 캐시(GitHub Pages는 10분)를 건너뛰고 서버에 새 버전이 있는지 매번 확인한다. 시연 중 예전 화면이 남지 않게.
+    fetch(event.request.url, { cache: "no-cache", credentials: "same-origin" })
       .then((res) => {
         if (res.ok) caches.open(CACHE).then((c) => c.put(event.request, res.clone()));
         return res;
