@@ -658,6 +658,28 @@ function applyDemoFire(rising, fire) {
   }
 }
 
+// 숨은 시연 버튼: 홈의 습도 카드를 누르면 시연 모드를 켜고 3초 뒤 화재. 화재 중에 다시 누르면 정상으로 돌리고 시연을 끈다.
+function humidityTrigger() {
+  clearTimeout(demoFireTimer);
+  const firing = state.demo && (state.demoFire || state.fire === true);
+  if (pushDemo) {
+    if (firing) {
+      pushDemo({ active: false, rising: false, fire: false });
+      return;
+    }
+    pushDemo({ active: true, rising: true, fire: false });
+    demoFireTimer = setTimeout(() => state.demo && pushDemo({ fire: true }), DEMO_FIRE_DELAY_MS);
+    return;
+  }
+  if (firing) {
+    setDemo(false);
+    return;
+  }
+  if (!state.demo) setDemo(true);
+  applyDemoFire(true, false);
+  demoFireTimer = setTimeout(() => applyDemoFire(true, true), DEMO_FIRE_DELAY_MS);
+}
+
 function toggleDemo(on) {
   clearTimeout(demoFireTimer);
   if (pushDemo) pushDemo({ active: on, rising: false, fire: false });
@@ -706,6 +728,7 @@ function initMenu() {
 
   $("#notifyBtn").addEventListener("click", requestNotify);
   $("#demoToggle").addEventListener("change", (e) => toggleDemo(e.target.checked));
+  $("#metricHum").addEventListener("click", humidityTrigger);
   $("#demoFire").addEventListener("click", () => demoFire(true));
   $("#demoClear").addEventListener("click", () => demoFire(false));
   $("#ackBtn").addEventListener("click", acknowledge);
